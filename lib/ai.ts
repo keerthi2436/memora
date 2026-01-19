@@ -24,11 +24,38 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     }
 }
 
+// Image Captioning Pipeline
+let captionPipeline: any = null;
+
+export async function generateImageCaption(imageUrl: string): Promise<string> {
+    try {
+        if (!captionPipeline) {
+            console.log("Loading captioning pipeline...");
+            // Use a small, fast model for browser inference
+            captionPipeline = await pipeline('image-to-text', 'Xenova/vit-gpt2-image-captioning');
+        }
+
+        // The pipeline expects a URL or Blob. Since we have a base64 string (data:image...),
+        // we might need to be careful. transformers.js handles data URLs well.
+        const output = await captionPipeline(imageUrl);
+        // Output format: [{ generated_text: "a cat sitting on a couch" }]
+        return output[0]?.generated_text || "Could not identify object.";
+    } catch (error) {
+        console.error("Image Captioning Error:", error);
+        return "Error analyzing image.";
+    }
+}
+
 // Mock Image Embedding (In real app, we'd use a server-side CLIP model or an API)
+// For now, we will just generate a text embedding of the CAPTION we just generated.
+// This is a clever hack: Image -> Caption -> Text Embedding -> Vector DB
 export async function generateImageEmbedding(imageUrl: string): Promise<number[]> {
-    // Check if we are "online" (verified key) or just mocking
-    console.log("Generating image mock embedding for:", imageUrl);
-    return new Array(512).fill(0).map(() => Math.random());
+    // 1. Generate Caption
+    const caption = await generateImageCaption(imageUrl);
+    console.log("Generated caption for embedding:", caption);
+
+    // 2. Generate Embedding of that caption
+    return await generateEmbedding(caption);
 }
 
 // Simple legacy helper kept for compatibility if needed, though we use browser speech now

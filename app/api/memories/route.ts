@@ -12,12 +12,30 @@ export async function GET(request: Request) {
     try {
         await ensureCollection();
 
+        // Role-Based Access Control (RBAC)
+        const role = searchParams.get('role'); // 'patient' | 'caregiver'
+
+        let filter: any = {};
+
+        // Privacy Filter: Caregiver ONLY sees 'caregiver' entries or 'health'/'emergency' tagged items.
+        // They CANNOT see strictly private voice notes.
+        if (role === 'caregiver') {
+            filter = {
+                should: [
+                    { key: "type", match: { value: "caregiver" } }, // Things Mark sent
+                    { key: "tags", match: { value: "health" } },    // Health data
+                    { key: "tags", match: { value: "emergency" } }  // Emergencies
+                ]
+            };
+        }
+
         // If no query, return recent memories (scroll)
         if (!query) {
             const recent = await qdrant.scroll(COLLECTION_NAME, {
-                limit: 3,
+                limit: 10, // Increased limit to ensure we find enough matching items
                 with_payload: true,
                 with_vector: false,
+                filter: role === 'caregiver' ? filter : undefined
                 // sort by timestamp descending if possible, mock for now relies on default order
             });
             return NextResponse.json({ result: recent.points });
@@ -55,12 +73,24 @@ export async function POST(request: Request) {
         const vector = await generateEmbedding(text);
         const id = uuidv4();
 
+        // Auto-tagging for Safety (Emergency Detection)
+        const lowerText = text.toLowerCase();
+        const emergencyKeywords = ['help', 'fell', 'fallen', 'hurt', 'pain', 'emergency', 'blooded'];
+        const isEmergency = emergencyKeywords.some(k => lowerText.includes(k));
+
+        const finalTags = tags || [];
+        if (isEmergency) {
+            finalTags.push('emergency');
+            finalTags.push('caregiver'); // Ensure Mark sees it
+            finalTags.push('alert');
+        }
+
         const payload: MemoryPayload = {
             type: type || 'conversation',
             content: text,
             timestamp: Date.now(),
             date: new Date().toISOString(),
-            tags: tags || [],
+            tags: finalTags,
         };
 
         await qdrant.upsert(COLLECTION_NAME, {
@@ -79,8 +109,8 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ success: true, id });
 
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: 'Failed to save memory' }, { status: 500 });
+    } catch (error: any) {
+        console.error("Save Memory API Error:", error);
+        return NextResponse.json({ error: 'Failed to save memory: ' + (error.message || String(error)) }, { status: 500 });
     }
 }

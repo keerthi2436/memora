@@ -90,11 +90,15 @@ graph TD
 
 ## 4. Technical Implementation
 
-### 4.1 Vector Database (Qdrant) Configuration
-Qdrant was selected for its **HNSW (Hierarchical Navigable Small World)** graph indexing, which offers $O(\log N)$ search complexity.
-*   **Collection Name**: `memora_moments`
-*   **Distance Metric**: `Cosine Similarity` (Optimum for normalized text embeddings).
-*   **Payload Schema**: We utilize Qdrant's payload filtering to separate "Memory Types" (Audio vs. Image vs. Caregiver).
+### 4.1 Vector Database: Qdrant (Primary Engine)
+**Qdrant** is the core nervous system of Memora. We utilize it for its high-performance **HNSW** indexing and robust filtering capabilities.
+*   **Collection Structure**: `memora_moments` with structured payloads (`type`, `tags`, `timestamp`).
+*   **Distance Metric**: Cosine Similarity.
+*   **Hybrid-Edge Architecture**: 
+    To meet the strict reliability requirements of healthcare (where internet may be intermittent), we implemented a **custom Edge Fallback Layer** (aka `ResilientVectorStore`). 
+    *   The system prioritizes a live connection to a **Qdrant Container**.
+    *   If the connection drops, it transparently switches to an **Offline Vector Cache** that replicates Qdrant's API signature.
+    *   This ensures **Zero Downtime** for the patient—a critical feature for medical devices.
 
 ### 4.2 Embedding Strategy (Transformers.js)
 To ensure privacy and offline capability, we utilize the **ONNX Runtime** to execute the `all-MiniLM-L6-v2` transformer model directly in the client's browser.

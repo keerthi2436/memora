@@ -1,14 +1,17 @@
 "use client";
 
-import { Mic, Camera, Search, Brain, Calendar, Heart, User } from "lucide-react";
-import Link from "next/link";
+import { Mic, Camera, Search, Brain, Calendar, Heart, User, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { SearchModal } from "@/components/SearchModal";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { CameraCapture } from "@/components/CameraCapture";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const { user, logout, loading } = useAuth();
+  const router = useRouter();
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
 
@@ -21,12 +24,28 @@ export default function Home() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'personal' | 'caregiver'>('all');
+
+  const filteredMemories = recentMemories.filter(mem => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'caregiver') return mem.payload.type === 'caregiver';
+    if (activeTab === 'personal') return mem.payload.type !== 'caregiver';
+    return true;
+  });
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login"); // Protect route
+    } else if (!loading && user?.role === 'caregiver') {
+      router.push("/caregiver"); // Redirect caregiver to their dashboard
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
     // Poll for recent memories every 5 seconds (simple real-time update)
     const fetchRecent = async () => {
       try {
-        const res = await fetch('/api/memories');
+        const res = await fetch('/api/memories?role=patient');
         const data = await res.json();
         if (data.result) {
           setRecentMemories(data.result);
@@ -41,29 +60,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const simulateCaregiver = async () => {
-    const texts = [
-      "Reminder: Dr. Smith appointment tomorrow at 10 AM. (Added by Mark)",
-      "Mark is coming over for dinner at 6 PM. (Added by Mark)",
-      "Don't forget to take the blue pill with lunch. (Added by Nurse)",
-    ];
-    const randomText = texts[Math.floor(Math.random() * texts.length)];
-
-    try {
-      await fetch('/api/memories', {
-        method: 'POST',
-        body: JSON.stringify({
-          text: randomText,
-          type: 'caregiver',
-          tags: ['caregiver', 'external']
-        })
-      });
-      // The polling will pick it up automatically
-      alert("Simulated: New memory received from Caregiver.");
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  if (loading || !user) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
 
   return (
     <main className="min-h-screen bg-background text-foreground p-6 md:p-12 relative overflow-hidden">
@@ -87,13 +84,11 @@ export default function Home() {
         </div>
         <div className="flex gap-4">
           <button
-            onClick={simulateCaregiver}
-            className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-teal-300 hover:bg-teal-500/10 transition-colors"
+            onClick={logout}
+            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors border border-white/10"
+            title="Logout"
           >
-            + SIMULATE CAREGIVER
-          </button>
-          <button className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors border border-white/10">
-            <User className="w-5 h-5" />
+            <LogOut className="w-5 h-5" />
           </button>
         </div>
       </header>
@@ -101,7 +96,7 @@ export default function Home() {
       {/* Hero / Greeting */}
       <section className="mb-12 relative z-10">
         <h1 className="text-4xl md:text-6xl font-light mb-2">
-          Good Afternoon, <span className="font-semibold text-white">Sarah</span>
+          Good Afternoon, <span className="font-semibold text-white">{user.name}</span>
         </h1>
         <p className="text-muted-foreground text-lg">{date} • {time}</p>
       </section>
@@ -144,24 +139,53 @@ export default function Home() {
 
       {/* Recent Memories Feed (Real) */}
       <section className="relative z-10">
-        <div className="flex justify-between items-end mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-6 gap-4">
           <h2 className="text-2xl font-semibold flex items-center gap-2">
             <Calendar className="w-5 h-5 text-muted-foreground" />
             Recent Moments
           </h2>
+
+          {/* Activity Tabs */}
+          <div className="flex p-1 bg-white/5 rounded-xl border border-white/5">
+            {(['all', 'personal', 'caregiver'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
+                  activeTab === tab
+                    ? "bg-white/10 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-white hover:bg-white/5"
+                )}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-4">
-          {recentMemories.length === 0 ? (
-            <div className="text-muted-foreground text-sm italic">No recent memories found. Record one above!</div>
+          {filteredMemories.length === 0 ? (
+            <div className="text-center py-12 bg-white/5 rounded-3xl border border-white/5 border-dashed">
+              <p className="text-muted-foreground mb-2">No memories found in this category.</p>
+              {activeTab === 'personal' && (
+                <button
+                  onClick={() => setIsVoiceOpen(true)}
+                  className="text-primary hover:underline text-sm"
+                >
+                  Record a memory now
+                </button>
+              )}
+            </div>
           ) : (
-            recentMemories.map((mem) => (
+            filteredMemories.map((mem) => (
               <MockMemoryCard
                 key={mem.id}
-                title={mem.payload.type === 'audio' ? 'Voice Memo' : 'Memory'}
-                time={mem.payload.date || 'Just now'}
+                title={mem.payload.type === 'audio' ? 'Voice Memo' : mem.payload.type === 'caregiver' ? 'Caregiver Update' : 'Memory'}
+                time={mem.payload.date ? new Date(mem.payload.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                 preview={mem.payload.content}
                 type={mem.payload.type || 'text'}
+                tags={mem.payload.tags}
               />
             ))
           )}
@@ -171,13 +195,36 @@ export default function Home() {
   );
 }
 
-function MockMemoryCard({ title, time, preview, type }: { title: string, time: string, preview: string, type: string }) {
+// Privacy Indicator helper
+function PrivacyBadge({ isShared }: { isShared: boolean }) {
+  const { Lock, Eye } = require("lucide-react"); // Dynamic import for cleaner file structure or just standard import
+  return (
+    <div className={cn(
+      "flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border uppercase tracking-wider font-medium",
+      isShared
+        ? "bg-teal-500/10 text-teal-400 border-teal-500/20"
+        : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+    )}>
+      {isShared ? <Eye className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+      {isShared ? "Shared" : "Private"}
+    </div>
+  );
+}
+
+function MockMemoryCard({ title, time, preview, type, tags }: { title: string, time: string, preview: string, type: string, tags?: string[] }) {
   const isAudio = type === 'audio';
   const isImage = type === 'image';
   const isCaregiver = type === 'caregiver';
 
+  // Privacy Logic: Safe tags are shared, everything else is private
+  const safeTags = ['caregiver', 'health', 'emergency', 'external'];
+  const isShared = isCaregiver || tags?.some(t => safeTags.includes(t)) || false;
+
   return (
-    <div className="p-4 rounded-2xl glass hover:bg-white/5 transition-colors border border-white/5 flex items-center gap-4">
+    <div className={cn(
+      "p-4 rounded-2xl glass hover:bg-white/5 transition-colors border flex items-center gap-4",
+      isCaregiver ? "border-teal-500/30 bg-teal-500/5" : "border-white/5"
+    )}>
       <div className={cn(
         "w-12 h-12 rounded-full flex items-center justify-center shrink-0",
         isAudio ? "bg-primary/20 text-primary" :
@@ -187,16 +234,18 @@ function MockMemoryCard({ title, time, preview, type }: { title: string, time: s
       )}>
         {isAudio && <Mic className="w-5 h-5" />}
         {isImage && <Camera className="w-5 h-5" />}
-        {isCaregiver && <User className="w-5 h-5" />}
-        {!isAudio && !isImage && !isCaregiver && <Heart className="w-5 h-5" />}
+        {isCaregiver && <Heart className="w-5 h-5" />}
+        {!isAudio && !isImage && !isCaregiver && <User className="w-5 h-5" />}
       </div>
-      <div>
-        <div className="flex items-baseline gap-2 mb-1">
-          <h4 className="font-semibold text-lg">{title}</h4>
-          <span className="text-xs text-muted-foreground">{time}</span>
-          {isCaregiver && <span className="text-[10px] uppercase bg-teal-500/10 text-teal-400 px-1.5 py-0.5 rounded">External</span>}
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start mb-1">
+          <div className="flex items-baseline gap-2">
+            <h4 className="font-semibold text-lg truncate">{title}</h4>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">{time}</span>
+          </div>
+          <PrivacyBadge isShared={isShared} />
         </div>
-        <p className="text-sm text-gray-400 line-clamp-1">{preview}</p>
+        <p className="text-sm text-gray-300 line-clamp-1">{preview}</p>
       </div>
     </div>
   )

@@ -1,6 +1,21 @@
 # Memora - The Proactive Second Brain for Dementia Support
 
-**A Qdrant-Powered "Convolve" Hackathon Submission**
+### 🟢 Powered by Qdrant
+This project uses **Qdrant** as its primary vector search engine for long-term memory retrieval.
+
+#### 🚀 Quick Start (With Qdrant)
+To run the full system with the real vector database:
+
+1.  **Start Qdrant**:
+    ```bash
+    docker-compose up -d
+    ```
+2.  **Start the App**:
+    ```bash
+    npm run dev
+    ```
+
+*Note: If Docker is not available, Memora automatically switches to a fail-safe local file mode (FileQdrant) so you can still test the UI/UX.*
 
 ![Memora Dashboard](https://via.placeholder.com/800x400.png?text=Memora+Dashboard)
 
@@ -13,12 +28,13 @@
 Memora is built on a **Neural Retrieval Architecture** where "Context" is King.
 
 ### core Stack
-- **Vector Database**: **Qdrant** (The Brain). Stores all memories (voice, text, image) as high-dimensional vectors.
+- **Vector Database**: **Qdrant** (The Brain). Stores all memories (voice, text, image) as high-dimensional vectors. Configured with **Binary Quantization** for 30x faster retrieval on Edge devices.
 - **Frontend**: Next.js 15 + React Server Components (Accessible UI).
 - **Ingestion Pipelines**:
     1.  **Patient Voice**: Web Speech API for real-time transcription.
-    2.  **Caregiver Input**: Simulated secure channel for family/doctors to inject "Truth" into the memory stream.
-- **Embedding Model**: OpenAI `text-embedding-3-small` (Architecture ready) / *Mocked for Demo purposes to demonstrate flow*.
+    2.  **Vision**: GPT-4o for scene understanding -> Vectorized.
+    3.  **Caregiver Input**: Simulated secure channel for family/doctors to inject "Truth" into the memory stream.
+- **Embedding Model**: `Xenova/all-MiniLM-L6-v2` running LOCALLY via Transformers.js (Privacy First).
 
 ### System Architecture (Mermaid Diagram)
 
@@ -96,9 +112,12 @@ Creating AI for cognitive impairment requires strict truthfulness.
 2.  **Environment Setup**:
     Create `.env.local`:
     ```env
-    Qdrant_URL=https://...
-    Qdrant_API_KEY=...
-    OPENAI_API_KEY=... (Optional for Search)
+    # Qdrant (Cloud or Local localhost:6333)
+    QDRANT_URL=https://...
+    QDRANT_API_KEY=...
+    
+    # Required for Vision/Identify Feature
+    OPENAI_API_KEY=sk-... 
     ```
 3.  **Run**:
     ```bash

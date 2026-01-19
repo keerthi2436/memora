@@ -13,53 +13,100 @@ export function CameraCapture({ isOpen, onClose }: CameraCaptureProps) {
     const [status, setStatus] = useState<"idle" | "preview" | "analyzing" | "success">("idle");
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [description, setDescription] = useState("");
+    const [userContext, setUserContext] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
+    // OPTIMIZATION: Resize image to max 800px width to speed up OpenAI latency
+    const resizeImage = (file: File): Promise<string> => {
+        return new Promise((resolve) => {
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setCapturedImage(reader.result as string);
-                setStatus("preview");
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    // Aggressive resizing for speed (500px is enough for recognition)
+                    const MAX_WIDTH = 500;
+
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.6)); // 60% quality (Good enough for AI)
+                };
+                img.src = e.target?.result as string;
             };
             reader.readAsDataURL(file);
+        });
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setStatus("analyzing"); // Temporary feedback
+            const resized = await resizeImage(file);
+            setCapturedImage(resized);
+            setStatus("preview");
         }
     };
 
     const analyzeImage = async () => {
         setStatus("analyzing");
 
-        // Mock analysis for hackathon demo (Simulating a Vision API)
-        // In a real app, we would send 'capturedImage' (base64) to GPT-4o or similar.
-        setTimeout(async () => {
-            // Randomly pick a "Dementia-relevant" recognition result
-            const results = [
-                "Prescription Bottle: ACE Inhibitors (Take 1 daily)",
-                "Family Member: Grandson Alex (Last visited Tuesday)",
-                "Object: Set of house keys on the kitchen counter",
-                "Document: Appointment reminder for Oct 12th"
-            ];
-            const mockResult = results[Math.floor(Math.random() * results.length)];
+        try {
+            // 1. Get Description from Real AI (GPT-4o Vision)
+            const analysisRes = await fetch('/api/analyze-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: capturedImage,
+                    prompt: userContext
+                })
+            });
 
-            // Save this "Memory" to Qdrant via our existing API
-            try {
-                await fetch('/api/memories', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: `[Visual Identification] ${mockResult}`,
-                        type: 'image',
-                        tags: ['vision', 'camera']
-                    })
-                });
-                setDescription(mockResult);
-                setStatus("success");
-            } catch (e) {
-                console.error(e);
-                setStatus("idle");
+            if (!analysisRes.ok) {
+                const errData = await analysisRes.json();
+                console.error("Server Error:", errData);
+                throw new Error(errData.details || "Vision analysis failed");
             }
-        }, 2000);
+
+            const { description } = await analysisRes.json();
+
+            // UPDATE UI IMMEDIATELY (Don't wait for DB save)
+            setDescription(description);
+            setStatus("success");
+
+            // Speak the result (Accessibility)
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance("I see " + description);
+                window.speechSynthesis.speak(utterance);
+            }
+
+            // 2. Save this "Memory" to Qdrant in BACKGROUND
+            const finalContent = userContext
+                ? `[Visual] ${userContext} - Identified as: ${description}`
+                : `[Visual Identification] ${description}`;
+
+            fetch('/api/memories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: finalContent,
+                    type: 'image',
+                    tags: ['vision', 'camera', 'gpt-4o']
+                })
+            }).catch(err => console.error("Background memory save failed:", err));
+
+        } catch (e) {
+            console.error(e);
+            alert("Failed to analyze image. Ensure your browser supports WebGPU/WASM.");
+        }
     };
 
     const handleClose = () => {
@@ -130,12 +177,21 @@ export function CameraCapture({ isOpen, onClose }: CameraCaptureProps) {
 
                         {/* Actions */}
                         {status === "preview" && (
-                            <button
-                                onClick={analyzeImage}
-                                className="w-full py-4 bg-primary rounded-xl font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
-                            >
-                                Analyze Image
-                            </button>
+                            <div className="w-full space-y-4">
+                                <textarea
+                                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                                    placeholder="Add context or ask a specific question (optional)..."
+                                    rows={2}
+                                    value={userContext}
+                                    onChange={(e) => setUserContext(e.target.value)}
+                                />
+                                <button
+                                    onClick={analyzeImage}
+                                    className="w-full py-4 bg-primary rounded-xl font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+                                >
+                                    Analyze & Save
+                                </button>
+                            </div>
                         )}
 
                         {status === "analyzing" && (
