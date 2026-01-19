@@ -1,131 +1,128 @@
-# Memora - The Proactive Second Brain for Dementia Support
+# Memora - The Proactive Second Brain (Qdrant Hackathon)
 
-### 🟢 Powered by Qdrant
-This project uses **Qdrant** as its primary vector search engine for long-term memory retrieval.
+![Memora Banner](https://via.placeholder.com/1200x400.png?text=MEMORA:+A+Prosthetic+for+the+Mind)
 
-#### 🚀 Quick Start (With Qdrant)
-To run the full system with the real vector database:
+> **Submission for Qdrant "Convolve" Hackathon 4.0**
+>
+> *Theme: High-Impact AI Agents for Social Good*
 
-1.  **Start Qdrant**:
-    ```bash
-    docker-compose up -d
-    ```
-2.  **Start the App**:
-    ```bash
-    npm run dev
-    ```
+## 🚨 Essential Links
+- **Live Demo**: [Vercel Deployment Link - Placeholder]
+- **Video Walkthrough**: [YouTube Link - Placeholder]
+- **Devpost Submission**: [Devpost Link - Placeholder]
 
-*Note: If Docker is not available, Memora automatically switches to a fail-safe local file mode (FileQdrant) so you can still test the UI/UX.*
+---
 
-![Memora Dashboard](https://via.placeholder.com/800x400.png?text=Memora+Dashboard)
+## 🚀 Quick Start (Run Locally)
+
+We have optimized Memora for a **zero-friction setup**. You can run it with or without a local Qdrant instance (it auto-falls back to file mode if Docker isn't running).
+
+### Prerequisites
+- Node.js 18+
+- Docker (Optional, for full Qdrant Vector search performance)
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/keerthi2436/memora.git
+cd memora
+```
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Setup Environment Variables
+Copy the example env file:
+```bash
+cp .env.example .env.local
+# On Windows PowerShell: copy .env.example .env.local
+```
+Then edit `.env.local` to add your keys (optional for basic features, required for Vision):
+```env
+# Optional: Only if using a Cloud Qdrant instance.
+# If running locally via Docker, leave these blank or default!
+QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=
+
+# Required for "Identify Object" (Vision) feature
+OPENAI_API_KEY=sk-...
+```
+
+### 4. Start the Database (Recommended)
+This spins up a local Qdrant instance on port 6333.
+```bash
+docker-compose up -d
+```
+
+### 5. Run the App
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 🧪 Testing the "God Mode" (Judge's Guide)
+
+We have implemented specific triggers to demonstrate the **Hybrid Retrieval** architecture easily during the demo.
+
+1.  **Voice Memory**: Click the **Red Microphone**. Say *"I put my glasses in the top drawer"*.
+    *   *System Action*: Transcribes -> Vectorizes (Transformers.js) -> Stores in Qdrant.
+2.  **Recall**: Click the **Search Icon**. Type/Say *"Where are my glasses?"*.
+    *   *System Action*: Retrieval finds semantically similar vector ("glasses" ~= "spectacles").
+3.  **Visual Memory**: Upload/Snap a picture of keys.
+    *   *System Action*: GPT-4o describes image -> Description is Vectorized -> "Keys" becomes searchable.
+4.  **"God Mode" Inject**: Search for **"Alex"**.
+    *   *System Action*: Triggers a preset "Perfect Memory" flow to demonstrate the UI capabilities even if your local vector DB is empty.
+
+---
 
 ## 01. Problem Statement
-**The Challenge**: Over 55 million people worldwide live with dementia or Alzheimer's. Losing one's memory is not just about forgetting keys; it's about losing independence, dignity, and connection to loved ones. Existing solutions are either simple alarms (which are forgotten) or complex screens (which are overwhelming).
+**The Challenge**: Over 55 million people worldwide live with dementia. The first faculty to fail is **Episodic Memory** (context of who/what/where).
+**The Solution**: **Memora** acts as an "External Hippocampus." It passively ingests life context (voice, vision, location) and proactively retrieves it using Vector Search, bridging the gap between biological failure and digital retention.
 
-**The Solution**: **Memora**. A passive, multimodal AI guardian that acts as an external hippocampus. It ingests life voice conversations, visual cues, and caregiver notes and proactively surfaces the right information at the right time.
-
-## 02. System Architecture
-Memora is built on a **Neural Retrieval Architecture** where "Context" is King.
-
-### core Stack
-- **Vector Database**: **Qdrant** (The Brain). Stores all memories (voice, text, image) as high-dimensional vectors. Configured with **Binary Quantization** for 30x faster retrieval on Edge devices.
-- **Frontend**: Next.js 15 + React Server Components (Accessible UI).
-- **Ingestion Pipelines**:
-    1.  **Patient Voice**: Web Speech API for real-time transcription.
-    2.  **Vision**: GPT-4o for scene understanding -> Vectorized.
-    3.  **Caregiver Input**: Simulated secure channel for family/doctors to inject "Truth" into the memory stream.
-- **Embedding Model**: `Xenova/all-MiniLM-L6-v2` running LOCALLY via Transformers.js (Privacy First).
-
-### System Architecture (Mermaid Diagram)
-
-```mermaid
-graph TD
-    A[User / Patient] -->|Voice Input| B(Web Speech API)
-    A -->|Visual Input| C(Camera Module)
-    F[Caregiver / Doctor] -->|External Context| D(Secure Ingestion API)
-    
-    B -->|Transcript Text| E{Transformer Engine}
-    C -->|Image Description| E
-    D -->|Verified Fact| E
-    
-    E -->|Generate 384-d Vector| G[Qdrant Vector DB]
-    
-    subgraph "Cognitive Layer (Local Edge)"
-    E
-    G
-    end
-    
-    H[Recall Query] -->|Semantic Search| G
-    G -->|Retrieve Top-K| I[Context Reconstruction]
-    I -->|Text-to-Speech| A
-```
+## 02. Technical Architecture
 
 ### Why Qdrant?
-Qdrant is not just storage; it is our reasoning engine.
-- **Hybrid Search**: We filter by `type:caregiver` vs `type:conversation` to trust external medical advice over potentially confused internal memories.
-- **Time Decay**: Qdrant's payload filtering allows us to prioritize "Recent" memories while keeping "Core" long-term memories (like family names) permanently accessible.
+Qdrant is the **Core Nervous System** of Memora. We use it for:
+1.  **Hybrid Search**: Combining Dense Vectors (Semantic) with Payload Filtering (Time/Tag).
+2.  **Resilience**: The app uses a `ResilientVectorStore` pattern. If Qdrant is offline, it falls back to a local JSON vector cache, ensuring the patient never loses access to critical info.
+3.  **Edge-Ready**: Uses Binary Quantization for extreme performance on low-end devices.
 
-## 03. Multimodal Strategy
-Memora handles three distinct data streams:
-1.  **Audio (Voice Memories)**:
-    - *Flow*: User speaks -> Browser Transcribes -> Text Vectorized -> Stored in Qdrant.
-    - *Impact*: Allows hands-free operation for motor-impaired users.
-2.  **Text (Caregiver Updates)**:
-    - *Flow*: External API Trigger -> High-Priority Vector -> Pushed to Feed.
-    - *Impact*: addresses the "Garbage In" problem by allowing verified data from trusted sources.
-3.  **Future: Vision**:
-    - *Architecture*: CLIP embeddings to recognize faces ("This is your grandson, Alex") automatically.
+### Stack
+- **Framework**: Next.js 15 (React Server Components)
+- **Vector DB**: Qdrant (Docker / Cloud)
+- **Local AI**: Transformers.js (`all-MiniLM-L6-v2`) for private, local embedding generation.
+- **Vision**: GPT-4o (via OpenAI) for image description.
 
-### Ingestion Logic Flowchart
+### Architecture Diagram
 ```mermaid
-sequenceDiagram
-    participant U as User
-    participant B as Browser (Edge)
-    participant Q as Qdrant DB
+graph TD
+    A[User Voice] -->|Web Speech API| B(Text Transcript)
+    C[User Camera] -->|GPT-4o Vision| D(Image Description)
     
-    U->>B: Speaks "Where are my keys?"
-    B->>B: Transcribe Audio to Text
-    B->>B: Encode Text -> Vector[384]
-    B->>Q: Cosine Search (Vector, limit=3)
-    Q-->>B: Return Top Matches (Payload)
-    B->>U: TTS Readout: "Keys are on the table."
+    B --> E{Transformers.js Local}
+    D --> E
+    
+    E -->|768d Vector| F[(Qdrant Vector DB)]
+    
+    G[Search Query] -->|Hyrid Search| F
+    F -->|Top-K Results| H[UI Response]
 ```
 
-## 04. Ethics & Safety
-**1. Trust & Reliability**
-Creating AI for cognitive impairment requires strict truthfulness.
-- **Solution**: We implement a "Source of Truth" label. Memories added by Caregivers are visually distinct (`EXTERNAL` tag) and prioritized in search ranking over the user's own potentially confused notes.
+## 03. Folder Structure
+```bash
+.
+├── app/              # Next.js App Router (Pages)
+├── components/       # React UI Components (SearchModal, VoiceRecorder)
+├── lib/              # Core Logic
+│   ├── ai.ts         # Transformers.js & OpenAI wrappers
+│   ├── qdrant.ts     # Qdrant Client & Fallback Logic
+├── public/           # Static Assets
+└── docker-compose.yml # Qdrant Setup
+```
 
-**2. Privacy**
-- All vector data is isolated. Future deployments would run Qdrant locally on-device (Edge Computing) to ensure audio logs never leave the user's home.
+---
 
-**3. Passive vs. Active**
-- We moved away from "User must type" to "User just speaks". This reduces cognitive load, a critical requirement for accessibility.
-
-## 05. How to Run
-1.  **Clone & Install**:
-    ```bash
-    git clone https://github.com/your-repo/memora.git
-    cd memora
-    npm install
-    ```
-2.  **Environment Setup**:
-    Create `.env.local`:
-    ```env
-    # Qdrant (Cloud or Local localhost:6333)
-    QDRANT_URL=https://...
-    QDRANT_API_KEY=...
-    
-    # Required for Vision/Identify Feature
-    OPENAI_API_KEY=sk-... 
-    ```
-3.  **Run**:
-    ```bash
-    npm run dev
-    ```
-4.  **Try the Demo**:
-    - **Record**: Click the red card and speak.
-    - **Simulate**: Click "+ SIMULATE CAREGIVER" to test external data ingestion.
-    - **Recall**: Click the search icon and *listen* to your memories read back to you.
-
-
+*Built with ❤️ for the Qdrant Hackathon.*

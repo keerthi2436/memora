@@ -186,6 +186,7 @@ export default function Home() {
                 preview={mem.payload.content}
                 type={mem.payload.type || 'text'}
                 tags={mem.payload.tags}
+                imageDetails={mem.payload.imageDetails}
               />
             ))
           )}
@@ -211,7 +212,8 @@ function PrivacyBadge({ isShared }: { isShared: boolean }) {
   );
 }
 
-function MockMemoryCard({ title, time, preview, type, tags }: { title: string, time: string, preview: string, type: string, tags?: string[] }) {
+// Update MockMemoryCard Component
+function MockMemoryCard({ title, time, preview, type, tags, imageDetails }: { title: string, time: string, preview: string, type: string, tags?: string[], imageDetails?: string }) {
   const isAudio = type === 'audio';
   const isImage = type === 'image';
   const isCaregiver = type === 'caregiver';
@@ -222,11 +224,11 @@ function MockMemoryCard({ title, time, preview, type, tags }: { title: string, t
 
   return (
     <div className={cn(
-      "p-4 rounded-2xl glass hover:bg-white/5 transition-colors border flex items-center gap-4",
+      "p-4 rounded-2xl glass hover:bg-white/5 transition-colors border flex items-start gap-4", // changed items-center to items-start for multiline
       isCaregiver ? "border-teal-500/30 bg-teal-500/5" : "border-white/5"
     )}>
       <div className={cn(
-        "w-12 h-12 rounded-full flex items-center justify-center shrink-0",
+        "w-12 h-12 rounded-full flex items-center justify-center shrink-0 mt-1", // added mt-1 for alignment
         isAudio ? "bg-primary/20 text-primary" :
           isImage ? "bg-secondary/20 text-secondary" :
             isCaregiver ? "bg-teal-500/20 text-teal-300" :
@@ -245,7 +247,14 @@ function MockMemoryCard({ title, time, preview, type, tags }: { title: string, t
           </div>
           <PrivacyBadge isShared={isShared} />
         </div>
-        <p className="text-sm text-gray-300 line-clamp-1">{preview}</p>
+        <p className="text-sm text-gray-300 line-clamp-2 mb-2">{preview}</p>
+
+        {/* Render Image Thumbnail if available (Demo Hack) */}
+        {imageDetails && (
+          <div className="mt-2 w-full max-w-[200px] rounded-lg overflow-hidden border border-white/10">
+            <img src={imageDetails} alt="Visual Memory" className="w-full h-auto object-cover opacity-80 hover:opacity-100 transition-opacity" />
+          </div>
+        )}
       </div>
     </div>
   )

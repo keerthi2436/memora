@@ -82,6 +82,12 @@ export function CameraCapture({ isOpen, onClose }: CameraCaptureProps) {
             setDescription(description);
             setStatus("success");
 
+            // HACK: Save to LocalStorage for immediate demo recall (Bypasses DB latency/failure)
+            if (capturedImage) {
+                localStorage.setItem('memora_demo_image', capturedImage);
+                localStorage.setItem('memora_demo_desc', description);
+            }
+
             // Speak the result (Accessibility)
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance("I see " + description);
@@ -99,7 +105,9 @@ export function CameraCapture({ isOpen, onClose }: CameraCaptureProps) {
                 body: JSON.stringify({
                     text: finalContent,
                     type: 'image',
-                    tags: ['vision', 'camera', 'gpt-4o']
+                    tags: ['vision', 'camera', 'gpt-4o'],
+                    // SAVE THE IMAGE DATA FOR DISPLAY
+                    imageDetails: capturedImage
                 })
             }).catch(err => console.error("Background memory save failed:", err));
 

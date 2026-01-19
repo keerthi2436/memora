@@ -18,4 +18,5 @@ export interface MemoryPayload {
     date: string; // Human readable
     tags: string[];
     emotion?: string;
+    imageDetails?: string;
 }
