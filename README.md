@@ -1,18 +1,5 @@
 # Memora - The Proactive Second Brain (Qdrant Hackathon)
 
-![Memora Banner](https://via.placeholder.com/1200x400.png?text=MEMORA:+A+Prosthetic+for+the+Mind)
-
-> **Submission for Qdrant "Convolve" Hackathon 4.0**
->
-> *Theme: High-Impact AI Agents for Social Good*
-
-## 🚨 Essential Links
-- **Live Demo**: [Vercel Deployment Link - Placeholder]
-- **Video Walkthrough**: [YouTube Link - Placeholder]
-- **Devpost Submission**: [Devpost Link - Placeholder]
-
----
-
 ## 🚀 Quick Start (Run Locally)
 
 We have optimized Memora for a **zero-friction setup**. You can run it with or without a local Qdrant instance (it auto-falls back to file mode if Docker isn't running).
@@ -125,4 +112,3 @@ graph TD
 
 ---
 
-*Built with ❤️ for the Qdrant Hackathon.*
