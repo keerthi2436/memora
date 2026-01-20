@@ -5,7 +5,7 @@
 
 
 ## 💡 The Mission
-Dementia strips away a person's context—the "who, where, and why" of their life.  
+Dementia strips away a person's context the "who, where, and why" of their life.  
 **Memora** restores this context. It is an intelligent agent system that listens, sees, and remembers for you, acting as an "External Hippocampus" to help patients retain their independence.
 
 ---
