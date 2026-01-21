@@ -1,4 +1,3 @@
-
 # 🧠 MEMORA
 > **A Cognitive Prosthetic for Dementia Care**  
 > *Submission for Qdrant "Convolve" Hackathon 2025*
@@ -65,17 +64,21 @@ graph TD
 
 ## ⚡ Tech Stack (Powered by Qdrant)
 
-*   **Memory Core**: **Qdrant** (Vector Database)
-*   **Agent Logic**: **Transformers.js** (Local AI) + **GPT-4o** (Vision)
-*   **Frontend**: Next.js 15 (React Server Components)
-*   **Deployment**: Docker
+*   **Memory Core**: **Qdrant** (Vector Database) - Using Hybrid Search & Payload Filtering.
+*   **AI Logic**: **Transformers.js** (Local Embeddings) + **GPT-4o** (Vision/Reasoning).
+*   **Frontend**: Next.js 16 (React Server Components), React 19, Framer Motion.
+*   **Styling**: Tailwind CSS v4.
+*   **Deployment**: Docker.
 
 ### Why Qdrant?
-We chose Qdrant because it allows **Hybrid Search**. We can combine "fuzzy" semantic search (finding related memories) with "strict" medical filters (ensuring safety) in a single query.
+We chose Qdrant for three critical reasons:
+1.  **Hybrid Search**: We combine "fuzzy" semantic search (finding related memories) with "strict" medical filters (ensuring safety) in a single query.
+2.  **Binary Quantization**: Configured to compress vectors by 32x for extreme performance on edge devices (simulated in our setup).
+3.  **Payload Indexing**: Fast filtering of "Emergency" tags vs "Casual" conversation.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Judge's Guide)
 
 ### 1. Clone & Install
 ```bash
@@ -85,20 +88,24 @@ npm install
 ```
 
 ### 2. Configure Environment
+Create a `.env.local` file. You can copy our example:
 ```bash
 cp .env.example .env.local
 ```
-*Note: You can leave the Qdrant keys blank to run in "Local Mode", but you need an `OPENAI_API_KEY` for the Vision feature.*
+> **Note**: To use the **Vision features (Camera)**, you must provide an `OPENAI_API_KEY` in `.env.local`.
 
-### 3. Run It
+### 3. Start the Engines
+We recommend running Qdrant via Docker for the full experience:
 ```bash
-# Optional: Start Qdrant (for best performance)
 docker-compose up -d
+```
+*If you cannot run Docker, don't worry! Memora features a **Robust Fallback Mode** that will automatically switch to a local file-based vector simulation (memora_db.json) if it cannot connect to Qdrant.*
 
-# Start the App
+### 4. Run the App
+```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
@@ -106,9 +113,34 @@ Open [http://localhost:3000](http://localhost:3000).
 
 We added a special trigger to help judges test the full flow instantly:
 
-1.  Open the app and click the **Search** icon.
-2.  Type **"Alex"**.
-3.  **Magic happens**: The system will simulate a "Perfect Recall" scenario, pulling up a photo and context about the user's grandson, demonstrating the full Vision + Vector + TTS pipeline in one go.
+1.  **Search**: Open the app and click the **Search** icon.
+2.  **Trigger**: Type **"Alex"**.
+3.  **Witness**: The system will simulate a "Perfect Recall" scenario, pulling up a photo and context about the user's grandson, demonstrating the full Vision + Vector + TTS pipeline in one go.
+
+### Other Scenarios to Try:
+*   **Voice**: Click the mic and say *"I put my glasses on the nightstand."* Later, ask *"Where are my glasses?"*
+*   **Proactive**: If you mention *"I am feeling dizzy"*, the Guardian Agent will flag it as a health event.
+
+---
+
+## 📂 Project Structure
+
+```
+memora/
+├── app/                # Next.js 16 App Router
+├── components/         # React Components (VoiceRecorder, SearchModal)
+├── lib/
+│   ├── qdrant.ts       # Qdrant Client Integration & Fallback Logic
+│   └── hooks/          # Custom Hooks for Audio/Vision
+├── public/             # Static Assets
+└── docker-compose.yml  # Qdrant Setup
+```
+
+---
+
+## 🛡️ Robustness & Safety
+*   **Offline Capable**: If the internet cuts out, the core memory retrieval keeps working via local fallback.
+*   **Privacy First**: Medical data is tagged and prioritized over casual conversation using Qdrant's Payload Filtering.
 
 ---
 
