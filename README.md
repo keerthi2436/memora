@@ -79,6 +79,123 @@ We chose Qdrant for three critical reasons:
 3.  **Payload Indexing**: Fast filtering of "Emergency" tags vs "Casual" conversation.
 
 ---
+## 👥 User Roles & System Overview
+
+Memora is built around **two clearly separated user perspectives**:
+
+### 👩‍🦳 Patient (Sarah)
+A memory companion that helps record, identify, and recall personal memories.
+
+### 👨‍👩‍⚕️ Caregiver (Mark)
+A caregiver portal that enables reminders, messages, and activity awareness.
+
+This separation ensures **clarity, safety, and role-appropriate interaction**.
+
+---
+
+## 🧠 Patient Features (Sarah’s Perspective)
+
+### 1️⃣ Record Moments (Voice + Image)
+- The user can **record memories using voice input** via a microphone.
+- The user can **upload images** (e.g., people, objects, places).
+- Along with the image, the user can **describe the memory in their own words**.
+- These inputs are stored together as a **single contextual memory unit**.
+
+📌 Example:
+> Uploading a photo and saying  
+> *“He is my grandson Alex.”*
+
+---
+
+### 2️⃣ Identify People & Objects
+- When an image is uploaded, Memora **analyzes the image** and associates it with the provided description.
+- The system **confirms and stores the identity** as a memory.
+- This allows the user to later recognize people or objects they may forget.
+
+✔ Image successfully analyzed  
+✔ Memory stored and indexed
+
+---
+
+### 3️⃣ Automatic Memory Recognition
+- If the **same image is uploaded again in the future**, Memora:
+  - Recognizes the image
+  - Retrieves the **previously stored memory**
+  - Displays the associated information back to the user
+
+📌 Example:
+> Uploading the same photo again returns:  
+> *“I can confirm: he is my grandson Alex.”*
+
+This directly addresses real-world dementia challenges like **face recognition failure**.
+
+---
+
+### 4️⃣ Recall Memories (Semantic Search)
+- The **Recall** feature allows the user to:
+  - Type a name, keyword, or partial thought
+  - Example: `alex`
+- Memora performs **semantic search**, not keyword matching.
+- It returns **all relevant memories** associated with the query:
+  - Images
+  - Descriptions
+  - Past interactions
+
+This enables **natural memory retrieval**, similar to human recall.
+
+---
+
+### 5️⃣ Recent Moments Feed
+- Displays a timeline of:
+  - Personal memories
+  - Caregiver updates
+- Keeps the user grounded in **recent context**.
+
+---
+
+## 👨‍👩‍⚕️ Caregiver Features (Mark’s Perspective)
+
+### 1️⃣ Caregiver Portal
+A dedicated dashboard connected directly to the patient.
+
+The caregiver can see:
+- Connection status
+- Live activity indicators
+- A real-time interaction feed
+
+---
+
+### 2️⃣ Send Reminders & Messages
+- Caregivers can send messages such as:
+  - Medication reminders
+  - Appointment alerts
+  - Daily check-ins
+- Messages are **instantly delivered** to the patient.
+
+📌 Example:
+> “Did you take your medication?”
+
+Confirmation is shown once the message is sent successfully.
+
+---
+
+### 3️⃣ Quick Actions
+Caregivers have one-click actions for common scenarios:
+- 💊 Medication Check
+- 🏠 Visit Alert
+- 📞 Call Request
+
+These quick actions reduce friction during urgent or repetitive tasks.
+
+---
+
+### 4️⃣ Live Activity Feed
+- Displays real-time caregiver interactions:
+  - Messages sent
+  - Updates added
+- Helps caregivers understand **what support has already been provided**.
+
+---
 
 ## 🚀 Quick Start (Judge's Guide)
 
